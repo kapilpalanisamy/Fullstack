@@ -212,7 +212,12 @@ app.get('/health', (req, res) => {
     message: 'Backend is running perfectly! 🚀',
     database: {
       status: databaseStatus,
-      connected: isConnected
+      connected: isConnected,
+      url: process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/:[^:@]+@/, ':***@') : 'not set'
+    },
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      PORT: process.env.PORT || 5000
     }
   });
 });
@@ -303,7 +308,10 @@ app.get('/api/jobs/:id', async (req, res) => {
 // Companies endpoints
 app.get('/api/companies', async (req, res) => {
   try {
+    console.log('📋 Fetching companies list...');
+    
     if (!isConnected) {
+      console.log('💡 Database not connected, returning mock data');
       return res.json({
         success: true,
         data: [
@@ -321,10 +329,52 @@ app.get('/api/companies', async (req, res) => {
       });
     }
 
+    // First ensure companies table exists
+    try {
+      await pool.query('SELECT 1 FROM companies LIMIT 1');
+    } catch (error) {
+      if (error.code === '42P01') { // table does not exist
+        console.log('Creating companies table...');
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS companies (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            website VARCHAR(255),
+            logo_url VARCHAR(255),
+            industry VARCHAR(100),
+            company_size VARCHAR(50),
+            location VARCHAR(255),
+            founded_year INTEGER,
+            created_by UUID,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            is_active BOOLEAN DEFAULT true,
+            is_verified BOOLEAN DEFAULT false
+          )
+        `);
+      }
+    }
+
+    console.log('🔍 Querying companies from database...');
     const result = await pool.query(`
-      SELECT c.id, c.name, c.description, c.website, c.logo_url, c.industry, c.company_size, c.location, c.founded_year, c.is_verified, c.created_at, c.updated_at
+      SELECT 
+        c.id, 
+        c.name, 
+        c.description, 
+        c.website, 
+        c.logo_url, 
+        c.industry, 
+        c.company_size, 
+        c.location, 
+        c.founded_year, 
+        c.is_verified, 
+        c.created_at, 
+        c.updated_at,
+        c.is_active
       FROM companies c
-      ORDER BY c.created_at DESC
+      WHERE c.is_active = true
+      ORDER BY c.name ASC, c.created_at DESC
     `);
     
     res.json({
@@ -897,8 +947,20 @@ app.post('/api/jobs', authenticate, async (req, res) => {
 // POST /api/companies - Create a new company
 app.post('/api/companies', authenticate, async (req, res) => {
   try {
-    console.log('📝 Company creation request received:', req.body);
+    console.log('📝 Company creation request received');
+    console.log('   Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('   Body:', JSON.stringify(req.body, null, 2));
+    console.log('   Database connected:', isConnected);
     
+    // Ensure we have a proper request body
+    if (!req.body) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid request',
+        message: 'Request body is missing'
+      });
+    }
+
     const { name, description, website, logo_url, industry, company_size, location, founded_year } = req.body;
     
     if (!name) {
@@ -933,32 +995,27 @@ app.post('/api/companies', authenticate, async (req, res) => {
 
     console.log('💾 Creating company in database:', { name, industry, location });
     
-    // First check if table exists
-    try {
-      await pool.query('SELECT 1 FROM companies LIMIT 1');
-    } catch (error) {
-      if (error.code === '42P01') { // table does not exist
-        console.log('Creating companies table...');
-        await pool.query(`
-          CREATE TABLE IF NOT EXISTS companies (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            name VARCHAR(255) NOT NULL,
-            description TEXT,
-            website VARCHAR(255),
-            logo_url VARCHAR(255),
-            industry VARCHAR(100),
-            company_size VARCHAR(50),
-            location VARCHAR(255),
-            founded_year INTEGER,
-            created_by UUID,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            is_active BOOLEAN DEFAULT true,
-            is_verified BOOLEAN DEFAULT false
-          )
-        `);
-      }
-    }
+    // Create companies table if it doesn't exist
+    console.log('Ensuring companies table exists...');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS companies (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        website VARCHAR(255),
+        logo_url VARCHAR(255),
+        industry VARCHAR(100),
+        company_size VARCHAR(50),
+        location VARCHAR(255),
+        founded_year INTEGER,
+        created_by UUID,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        is_active BOOLEAN DEFAULT true,
+        is_verified BOOLEAN DEFAULT false
+      )
+    `);
+    console.log('✅ Companies table is ready.');
 
     // Now insert the company
     const result = await pool.query(`
