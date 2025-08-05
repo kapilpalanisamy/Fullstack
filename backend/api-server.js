@@ -366,6 +366,7 @@ const usersService = {
       id: 1,
       name: 'Test User',
       email: 'test@example.com',
+      password: '$2a$10$zRmKJjDGs7RRYyMjFX4Z8O9u3L6aLtfTJ0D7W5u1X6qZ3bJj5YpRy', // Password: test123!@#
       role: 'jobseeker',
       created_at: new Date().toISOString()
     },
@@ -373,6 +374,7 @@ const usersService = {
       id: 2,
       name: 'Demo Recruiter',
       email: 'recruiter@example.com',
+      password: '$2a$10$9cDZ2J7IgqeieK9D1O8sJ.eZLZiWGZg0PJ5tH2Gj5vU5GwzvLgM2.', // Password: recruiter123
       role: 'recruiter',
       created_at: new Date().toISOString()
     }
@@ -382,7 +384,7 @@ const usersService = {
     // First try to check database if connected
     if (pool && isConnected) {
       try {
-        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const result = await pool.query('SELECT id, name, email, role, password, created_at FROM users WHERE email = $1', [email]);
         if (result.rows[0]) {
           console.log(`✅ Found database user: ${email}`);
           return result.rows[0];
@@ -486,8 +488,17 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
     
-    // TODO: Add proper password verification here
-    // For now, we'll accept any password for existing users (demo purposes)
+    // Verify password using bcrypt
+    const bcrypt = require('bcryptjs');
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid credentials',
+        message: 'Invalid email or password.'
+      });
+    }
     
     console.log('🔐 Login successful for user:', {
       id: user.id,
