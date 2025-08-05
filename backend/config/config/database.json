@@ -1,0 +1,37 @@
+{
+  "development": {
+    "username": "postgres.ylikervxuyubfdomvnmz",
+    "password": "Kapil94433@",
+    "database": "postgres",
+    "host": "aws-0-ap-south-1.pooler.supabase.com",
+    "port": 6543,
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    },
+    "logging": false
+  },
+  "test": {
+    "username": "postgres",
+    "password": "password",
+    "database": "rize_job_portal_test",
+    "host": "127.0.0.1",
+    "port": 5432,
+    "dialect": "postgres",
+    "logging": false
+  },
+  "production": {
+    "use_env_variable": "DB_URL",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    },
+    "logging": false
+  }
+}

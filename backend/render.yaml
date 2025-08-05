@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: rizeos-backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: ADMIN_WALLET_ADDRESS
+        sync: false
+      - key: PAYMENT_ENABLED
+        value: true
+      - key: PLATFORM_FEE
+        value: 0.01 
