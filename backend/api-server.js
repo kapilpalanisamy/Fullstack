@@ -494,16 +494,13 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     console.log('👤 Login attempt for email:', email);
     
+    // Validate input
     if (!email || !password) {
       console.log('❌ Login failed: Missing email or password');
       return res.status(400).json({
         success: false,
         error: 'Email and password are required'
       });
-    }
-    
-    if (!isConnected) {
-      console.log('💡 Database not connected, using test users');
     }
     
     // Try to find user
@@ -514,33 +511,33 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({
         success: false,
         error: 'Invalid credentials',
-        message: 'User not found. Please register first or check your email address.'
+        message: 'Invalid email or password'
       });
     }
     
     console.log('✅ User found:', { email: user.email, role: user.role });
     
-    // Handle test users with plaintext passwords (temporary for development)
+    // Password verification
     const bcrypt = require('bcryptjs');
     let isValidPassword = false;
     
-    // Special handling for test users
-    if (email === 'test@example.com' && password === 'test123!@#') {
-      console.log('� Using test user credentials');
-      isValidPassword = true;
-    } else if (email === 'recruiter@example.com' && password === 'recruiter123') {
-      console.log('🔑 Using recruiter test credentials');
-      isValidPassword = true;
-    } else {
-      // Regular password verification
-      try {
+    try {
+      // For test users, allow plaintext password comparison
+      if (!isConnected && (
+          (email === 'test@example.com' && password === 'test123!@#') ||
+          (email === 'recruiter@example.com' && password === 'recruiter123')
+      )) {
+        console.log('🔑 Using test user credentials');
+        isValidPassword = true;
+      } else {
+        // Regular password verification
         console.log('🔒 Verifying password for user:', user.email);
         isValidPassword = await bcrypt.compare(password, user.password);
-        console.log('🔐 Password validation result:', isValidPassword);
-      } catch (error) {
-        console.error('❌ Password verification error:', error);
-        isValidPassword = false;
       }
+      console.log('🔐 Password validation result:', isValidPassword);
+    } catch (error) {
+      console.error('❌ Password verification error:', error);
+      isValidPassword = false;
     }
     
     if (!isValidPassword) {
