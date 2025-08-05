@@ -25,10 +25,15 @@ import {
   FileText
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useWallet } from "../contexts/WalletContext";
+import WalletConnection from "../components/WalletConnection";
 
 const ProfileManagement = () => {
+  const { isConnected, walletAddress } = useWallet();
   const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [resumeFile, setResumeFile] = useState(null);
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -53,6 +58,65 @@ const ProfileManagement = () => {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setResumeFile(file);
+      // Upload the resume file
+      const formData = new FormData();
+      formData.append('resume', file);
+      
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/profile/upload-resume`, {
+          method: 'POST',
+          body: formData,
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          setProfileData(prev => ({
+            ...prev,
+            resume_url: data.url
+          }));
+          // After successful upload, extract skills
+          await extractSkills(data.url);
+        }
+      } catch (error) {
+        console.error('Error uploading resume:', error);
+        alert('Failed to upload resume. Please try again.');
+      }
+    }
+  };
+
+  const extractSkills = async (resumeUrl) => {
+    setIsExtracting(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/ai/extract-skills`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ resumeUrl }),
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setProfileData(prev => ({
+          ...prev,
+          skills: Array.isArray(prev.skills) 
+            ? [...new Set([...prev.skills, ...data.skills])] 
+            : data.skills
+        }));
+        alert('Skills extracted successfully!');
+      }
+    } catch (error) {
+      console.error('Error extracting skills:', error);
+      alert('Failed to extract skills. Please try again.');
+    } finally {
+      setIsExtracting(false);
+    }
   };
 
   const handleSave = async () => {
@@ -282,6 +346,26 @@ const ProfileManagement = () => {
               />
             </div>
           </div>
+
+          {/* Blockchain Wallet Integration */}
+          <div className="mt-4">
+            <Label>Blockchain Wallet</Label>
+            {isConnected ? (
+              <div className="mt-2">
+                <Badge variant="secondary" className="text-sm font-mono">
+                  {walletAddress}
+                </Badge>
+              </div>
+            ) : (
+              <div className="mt-2">
+                <WalletConnection
+                  onConnect={(address) => {
+                    handleInputChange("wallet_address", address);
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -318,17 +402,39 @@ const ProfileManagement = () => {
             </div>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="skills">Skills</Label>
-            <Textarea
-              id="skills"
-              placeholder="JavaScript, React, Node.js, Python, SQL, Git..."
-              value={profileData.skills}
-              onChange={(e) => handleInputChange("skills", e.target.value)}
-              disabled={!isEditing}
-              rows={3}
-            />
-            <p className="text-xs text-gray-500 mt-1">List your technical skills, separated by commas</p>
+            <div className="flex gap-2">
+              <Textarea
+                id="skills"
+                placeholder="JavaScript, React, Node.js, Python, SQL, Git..."
+                value={profileData.skills}
+                onChange={(e) => handleInputChange("skills", e.target.value)}
+                disabled={!isEditing}
+                rows={3}
+                className="flex-1"
+              />
+              {isEditing && (
+                <div className="flex flex-col gap-2">
+                  <Input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileUpload}
+                    className="w-full"
+                  />
+                  <Button
+                    variant="secondary"
+                    onClick={() => extractSkills(profileData.resume_url)}
+                    disabled={isExtracting || !profileData.resume_url}
+                  >
+                    {isExtracting ? "Extracting..." : "Extract Skills from Resume"}
+                  </Button>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-gray-500">
+              List your technical skills separated by commas, or upload your resume for AI-powered skill extraction
+            </p>
           </div>
 
           <div>
