@@ -530,15 +530,7 @@ app.post('/api/auth/login', async (req, res) => {
         message: 'Invalid email or password.'
       });
     }
-    } catch (error) {
-      console.error('❌ Password verification error:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Authentication error',
-        message: 'Error verifying password.'
-      });
-    }
-    
+
     console.log('🔐 Login successful for user:', {
       id: user.id,
       name: user.name,
