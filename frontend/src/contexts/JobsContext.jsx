@@ -10,9 +10,43 @@ export const useJobs = () => {
   return context;
 };
 
+// Default companies when database is not available or empty
+const defaultCompanies = [
+  {
+    id: '1',
+    name: 'RizeOS',
+    description: 'Leading Web3 Job Portal Platform',
+    website: 'https://rizeos.com',
+    industry: 'Technology',
+    company_size: '11-50',
+    location: 'Global',
+    logo_url: '/companies/rizeos.svg'
+  },
+  {
+    id: '2',
+    name: 'TechCorp',
+    description: 'Innovative Technology Solutions Provider',
+    website: 'https://techcorp.example.com',
+    industry: 'Technology',
+    company_size: '51-200',
+    location: 'San Francisco, CA',
+    logo_url: '/companies/techcorp.svg'
+  },
+  {
+    id: '3',
+    name: 'HealthPlus',
+    description: 'Modern Healthcare Solutions',
+    website: 'https://healthplus.example.com',
+    industry: 'Healthcare',
+    company_size: '201-500',
+    location: 'Boston, MA',
+    logo_url: '/companies/healthplus.svg'
+  }
+];
+
 export const JobsProvider = ({ children }) => {
   const [jobs, setJobs] = useState([]);
-  const [companies, setCompanies] = useState([]);
+  const [companies, setCompanies] = useState(defaultCompanies);
   const [savedJobs, setSavedJobs] = useState([]);
   const [userJobs, setUserJobs] = useState([]);
   const [applications, setApplications] = useState([]);
@@ -110,16 +144,28 @@ export const JobsProvider = ({ children }) => {
     try {
       const response = await apiCall('/companies');
       if (response.success) {
-        setCompanies(response.data || []);
-        return response.data || [];
+        // If we got companies from the API and it's not empty, use them
+        if (response.data && response.data.length > 0) {
+          setCompanies(response.data);
+          return response.data;
+        } else {
+          // If no companies in database, use default companies
+          console.log('No companies found in database, using default companies');
+          setCompanies(defaultCompanies);
+          return defaultCompanies;
+        }
       } else {
-        setError('Failed to fetch companies');
-        return [];
+        // If API call wasn't successful, use default companies
+        console.log('Failed to fetch companies from API, using default companies');
+        setCompanies(defaultCompanies);
+        return defaultCompanies;
       }
     } catch (error) {
       console.error('Error fetching companies:', error);
       setError('Failed to connect to backend for companies');
-      return [];
+      // Use default companies on error
+      setCompanies(defaultCompanies);
+      return defaultCompanies;
     }
   };
 

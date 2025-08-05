@@ -18,6 +18,11 @@ import { useJobs } from "../contexts/JobsContext";
 
 const schema = z.object({
   name: z.string().min(1, { message: "Company name is required" }),
+  description: z.string().min(10, { message: "Description should be at least 10 characters" }).optional(),
+  website: z.string().url({ message: "Please enter a valid URL" }).optional(),
+  industry: z.string().min(1, { message: "Industry is required" }),
+  company_size: z.string().optional(),
+  location: z.string().min(1, { message: "Location is required" }),
   logo: z
     .any()
     .refine(
@@ -52,7 +57,13 @@ const AddCompanyDrawer = ({ onCompanyAdded }) => {
     try {
       const result = await addCompany({
         name: data.name,
+        description: data.description || '',
+        website: data.website || '',
+        industry: data.industry || '',
+        company_size: data.company_size || '',
+        location: data.location || '',
         // logo_url will be handled later with proper file upload
+        logo_url: '/companies/default.svg'
       });
       
       if (result.success) {
@@ -89,26 +100,95 @@ const AddCompanyDrawer = ({ onCompanyAdded }) => {
         <DrawerHeader>
           <DrawerTitle>Add a New Company</DrawerTitle>
         </DrawerHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex gap-2 p-4 pb-0">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 p-4">
           {/* Company Name */}
-          <Input placeholder="Company name" {...register("name")} />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Company Name *</label>
+            <Input placeholder="Enter company name" {...register("name")} />
+            {errors.name && <p className="text-red-500 text-xs">{errors.name.message}</p>}
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Description</label>
+            <textarea
+              className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Enter company description"
+              {...register("description")}
+            />
+            {errors.description && <p className="text-red-500 text-xs">{errors.description.message}</p>}
+          </div>
+
+          {/* Website */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Website</label>
+            <Input type="url" placeholder="https://..." {...register("website")} />
+            {errors.website && <p className="text-red-500 text-xs">{errors.website.message}</p>}
+          </div>
+
+          {/* Industry */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Industry *</label>
+            <select
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              {...register("industry")}
+            >
+              <option value="">Select industry</option>
+              <option value="Technology">Technology</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Finance">Finance</option>
+              <option value="Education">Education</option>
+              <option value="Manufacturing">Manufacturing</option>
+              <option value="Retail">Retail</option>
+              <option value="Other">Other</option>
+            </select>
+            {errors.industry && <p className="text-red-500 text-xs">{errors.industry.message}</p>}
+          </div>
+
+          {/* Company Size */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Company Size</label>
+            <select
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              {...register("company_size")}
+            >
+              <option value="">Select company size</option>
+              <option value="1-10">1-10 employees</option>
+              <option value="11-50">11-50 employees</option>
+              <option value="51-200">51-200 employees</option>
+              <option value="201-500">201-500 employees</option>
+              <option value="501-1000">501-1000 employees</option>
+              <option value="1000+">1000+ employees</option>
+            </select>
+          </div>
+
+          {/* Location */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Location *</label>
+            <Input placeholder="Enter location" {...register("location")} />
+            {errors.location && <p className="text-red-500 text-xs">{errors.location.message}</p>}
+          </div>
 
           {/* Company Logo */}
-          <Input
-            type="file"
-            accept="image/*"
-            className="file:text-gray-500"
-            {...register("logo")}
-          />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Company Logo</label>
+            <Input
+              type="file"
+              accept="image/*"
+              className="file:text-gray-500"
+              {...register("logo")}
+            />
+            {errors.logo && <p className="text-red-500 text-xs">{errors.logo.message}</p>}
+          </div>
 
           {/* Add Button */}
           <Button
             type="submit"
             variant="destructive"
-            className="w-40"
+            className="w-full mt-4"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Adding..." : "Add"}
+            {isSubmitting ? "Adding..." : "Add Company"}
           </Button>
         </form>
         <DrawerFooter>
