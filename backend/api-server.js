@@ -897,9 +897,12 @@ app.post('/api/jobs', authenticate, async (req, res) => {
 // POST /api/companies - Create a new company
 app.post('/api/companies', authenticate, async (req, res) => {
   try {
+    console.log('📝 Company creation request received:', req.body);
+    
     const { name, description, website, logo_url, industry, company_size, location, founded_year } = req.body;
     
     if (!name) {
+      console.log('❌ Company creation failed: Name is required');
       return res.status(400).json({
         success: false,
         error: 'Company name is required'
@@ -907,6 +910,7 @@ app.post('/api/companies', authenticate, async (req, res) => {
     }
 
     if (!isConnected) {
+      console.log('💡 Database not connected, returning mock data');
       // Return mock success if database not connected
       const mockCompany = {
         id: Date.now(),
@@ -927,15 +931,71 @@ app.post('/api/companies', authenticate, async (req, res) => {
       });
     }
 
-    // Generate UUID using crypto module
-    const { randomUUID } = require('crypto');
-    const companyId = randomUUID();
+    console.log('💾 Creating company in database:', { name, industry, location });
     
+    // First check if table exists
+    try {
+      await pool.query('SELECT 1 FROM companies LIMIT 1');
+    } catch (error) {
+      if (error.code === '42P01') { // table does not exist
+        console.log('Creating companies table...');
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS companies (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            website VARCHAR(255),
+            logo_url VARCHAR(255),
+            industry VARCHAR(100),
+            company_size VARCHAR(50),
+            location VARCHAR(255),
+            founded_year INTEGER,
+            created_by UUID,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            is_active BOOLEAN DEFAULT true,
+            is_verified BOOLEAN DEFAULT false
+          )
+        `);
+      }
+    }
+
+    // Now insert the company
     const result = await pool.query(`
-      INSERT INTO companies (id, name, description, website, logo_url, industry, company_size, location, founded_year, created_by, created_at, updated_at)
-      VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+      INSERT INTO companies (
+        name, 
+        description, 
+        website, 
+        logo_url, 
+        industry, 
+        company_size, 
+        location, 
+        founded_year, 
+        created_by, 
+        created_at, 
+        updated_at,
+        is_active,
+        is_verified
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, 
+        NOW(), 
+        NOW(),
+        true,
+        false
+      )
       RETURNING *
-    `, [name, description, website, logo_url, industry, company_size, location, founded_year, req.user.id]);
+    `, [
+      name, 
+      description || '', 
+      website || '', 
+      logo_url || '/companies/default.svg', 
+      industry || '', 
+      company_size || '', 
+      location || '', 
+      founded_year || null, 
+      req.user.id
+    ]);
 
     res.status(201).json({
       success: true,
