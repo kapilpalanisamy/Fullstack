@@ -1,11 +1,10 @@
 [build]
-  command = "npm install --force && npm run build"
+  command = "yarn install && yarn build"
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "16"
-  NPM_FLAGS = "--legacy-peer-deps"
-  VITE_NODE_VERSION = "16"
+  NODE_VERSION = "18.17.0"
+  YARN_FLAGS = "--ignore-engines"
 
 [[redirects]]
   from = "/*"
