@@ -409,12 +409,17 @@ const usersService = {
     // For hardcoded test users, just return success
     const { name, email, password, role = 'jobseeker' } = userData;
     
+    // Hash the password using bcrypt
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
     if (!pool || !isConnected) {
       // Add to test users array
       const newUser = {
         id: Date.now(),
         name,
         email,
+        password: hashedPassword,
         role,
         created_at: new Date().toISOString()
       };
@@ -435,7 +440,7 @@ const usersService = {
       
       const result = await pool.query(
         'INSERT INTO users (id, name, email, role, password, created_at, updated_at, is_active, email_verified) VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), true, true) RETURNING *',
-        [userId, name, email, dbRole, password]
+        [userId, name, email, dbRole, hashedPassword]
       );
       console.log(`✅ Created database user: ${email} with role: ${dbRole}`);
       return result.rows[0];
@@ -490,13 +495,26 @@ app.post('/api/auth/login', async (req, res) => {
     
     // Verify password using bcrypt
     const bcrypt = require('bcryptjs');
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log('🔒 Verifying password for user:', user.email);
+    console.log('🔑 Password hash in database:', user.password);
     
-    if (!isValidPassword) {
-      return res.status(401).json({
+    try {
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      console.log('🔐 Password validation result:', isValidPassword);
+      
+      if (!isValidPassword) {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid credentials',
+          message: 'Invalid email or password.'
+        });
+      }
+    } catch (error) {
+      console.error('❌ Password verification error:', error);
+      return res.status(500).json({
         success: false,
-        error: 'Invalid credentials',
-        message: 'Invalid email or password.'
+        error: 'Authentication error',
+        message: 'Error verifying password.'
       });
     }
     
