@@ -366,7 +366,7 @@ const usersService = {
       id: 1,
       name: 'Test User',
       email: 'test@example.com',
-      password: '$2a$10$zRmKJjDGs7RRYyMjFX4Z8O9u3L6aLtfTJ0D7W5u1X6qZ3bJj5YpRy', // Password: test123!@#
+      password: '$2a$10$8sCvBIRGlxMnNR2lvHwPf.sMBDxhHFVsEW96C0JJPLn5kZOi7Y2LC', // Password: test123!@#
       role: 'jobseeker',
       created_at: new Date().toISOString()
     },
@@ -381,23 +381,31 @@ const usersService = {
   ],
 
   async getByEmail(email) {
+    console.log('🔍 Searching for user with email:', email);
+    
     // First try to check database if connected
     if (pool && isConnected) {
       try {
+        console.log('💾 Checking database first...');
         const result = await pool.query('SELECT id, name, email, role, password, created_at FROM users WHERE email = $1', [email]);
         if (result.rows[0]) {
-          console.log(`✅ Found database user: ${email}`);
+          console.log(`✅ Found database user:`, result.rows[0]);
           return result.rows[0];
         }
+        console.log('❌ User not found in database');
       } catch (error) {
         console.error('Error fetching user by email:', error.message);
       }
+    } else {
+      console.log('💡 Database not connected, checking test users');
     }
     
     // Fallback to hardcoded test users if database fails or user not found
+    console.log('🔍 Checking test users...');
+    console.log('📋 Available test users:', this.testUsers.map(u => u.email));
     const testUser = this.testUsers.find(user => user.email === email);
     if (testUser) {
-      console.log(`✅ Found test user: ${email}`);
+      console.log(`✅ Found test user:`, { ...testUser, password: '[HIDDEN]' });
       return testUser;
     }
 
@@ -472,12 +480,8 @@ app.post('/api/auth/login', async (req, res) => {
     }
     
     if (!isConnected) {
-      // Require database connection for authentication
-      return res.status(503).json({
-        success: false,
-        error: 'Database not available',
-        message: 'Authentication service is currently unavailable. Please try again later.'
-      });
+      console.log('💡 Database not connected, falling back to test users');
+      // Continue with test users instead of requiring database
     }
     
     // Try to find user in database
