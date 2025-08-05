@@ -14,6 +14,14 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const app = express();
 const port = process.env.PORT || 5000;
 
+// CORS configuration
+app.use(cors({
+  origin: ['https://fullstack-job-portal.netlify.app', 'http://localhost:5173'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
 // Simple authentication middleware
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
