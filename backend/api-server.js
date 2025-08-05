@@ -54,23 +54,18 @@ const validateUserId = (userId) => {
   return userId;
 };
 
-// Database configuration using Transaction Pooler (better for stateless applications)
+// Database configuration for Supabase connection
 const dbConfig = {
     connectionString: process.env.DATABASE_URL,
     ssl: {
-        rejectUnauthorized: false,
-        sslmode: 'require'
+        rejectUnauthorized: false
     },
-    max: 10, // Increased pool size for better concurrent connections
+    max: 5, // maximum number of clients in the pool
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000, // Reduced timeout for faster failure detection
-    keepAlive: true,
-    statement_timeout: 10000, // Prevent long-running queries
-    query_timeout: 10000,    // Additional query timeout
-    application_name: 'rizeos-job-portal', // Helps identify connections in logs
-    // PgBouncer settings
-    keepAliveInitialDelayMillis: 10000,
-    retry_on_connection_loss: true
+    connectionTimeoutMillis: 5000,
+    application_name: 'rizeos-job-portal',
+    statement_timeout: 10000,
+    query_timeout: 10000
 };
 
 let pool;
@@ -79,27 +74,53 @@ let isConnected = false;
 
 // Initialize database connection with retry logic
 async function initDatabase() {
-    const maxRetries = 2; // Reduced retries since we'll add hardcoded users
+    const maxRetries = 5;
     let retryCount = 0;
     
     while (retryCount < maxRetries) {
         try {
-            console.log(`🔌 Testing database connection (attempt ${retryCount + 1}/${maxRetries})...`);
-            console.log(`   Connection string: ${dbConfig.connectionString.replace(/:[^:@]+@/, ':***@')}`);
-            console.log(`   SSL Mode: ${dbConfig.ssl.sslmode}`);
-            console.log(`   Keep Alive: ${dbConfig.keepAlive}`);
+            console.log('🔌 Connecting to Supabase database...');
+            console.log('   Attempt:', retryCount + 1, 'of', maxRetries);
+            console.log('   Using connection string:', process.env.DATABASE_URL.replace(/:[^:@]+@/, ':***@'));
             
+            // Create a new pool
             pool = new Pool(dbConfig);
             
-            // Add error listener to catch connection issues
+            // Test the connection
+            const testClient = await pool.connect();
+            const result = await testClient.query('SELECT NOW() as time');
+            testClient.release();
+            
+            console.log('✅ Connected to Supabase successfully!');
+            console.log(`   Server time: ${result.rows[0].time}`);
+            
+            // Add error listener for the pool
             pool.on('error', (err) => {
-                console.error('Unexpected error on idle client', err);
-                process.exit(-1);
+                console.error('🚨 Database pool error:', err);
+                if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === '57P01') {
+                    console.log('Database connection was lost. Attempting to reconnect...');
+                    setTimeout(() => initDatabase(), 5000);
+                } else {
+                    console.error('Fatal database error:', err);
+                }
             });
             
             // Test connection with timeout
-            const client = await pool.connect();
-            await client.query('SELECT 1');
+            const client = await Promise.race([
+                pool.connect(),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Connection timeout')), 5000)
+                )
+            ]);
+            
+            // Test query with timeout
+            await Promise.race([
+                client.query('SELECT 1'),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Query timeout')), 5000)
+                )
+            ]);
+            
             client.release();
             
             console.log('✅ Database connected successfully!');
