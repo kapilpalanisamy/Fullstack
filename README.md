@@ -41,44 +41,6 @@ RizeOS is a modern job portal that combines AI-powered job matching, Web3 wallet
 - Phantom Wallet Support
 - Testnet Transactions
 
-# RizeOS - AI-Powered Job Portal with Web3 Integration
-
-## 🚀 Project Overview
-
-RizeOS is a modern job portal that combines AI-powered job matching, Web3 wallet integration, and blockchain payments. Built with React, Node.js, and Supabase.
-
-## ✨ Features
-
-- **AI-Powered Job Matching**: Intelligent job recommendations based on skills and preferences
-- **Web3 Wallet Integration**: MetaMask and Phantom wallet support
-- **Blockchain Payments**: Secure payment processing on testnet
-- **Real-time Chat**: Built-in messaging system
-- **Advanced Search**: Filter jobs by location, salary, skills, and more
-- **Admin Dashboard**: Complete management interface
-- **Responsive Design**: Works on all devices
-
-## 🛠️ Tech Stack
-
-### Frontend
-- React 18
-- Vite
-- Tailwind CSS
-- Radix UI Components
-- React Router DOM
-- Clerk Authentication
-
-### Backend
-- Node.js
-- Express.js
-- PostgreSQL (Supabase)
-- JWT Authentication
-- Web3.js
-
-### AI/ML
-- OpenAI API Integration
-- Skill Extraction
-- Job Matching Algorithms
-
 ## 📋 Database Schema
 
 ```sql
