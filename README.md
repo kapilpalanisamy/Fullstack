@@ -22,7 +22,7 @@ RizeOS is a modern job portal that combines AI-powered job matching, Web3 wallet
 - Tailwind CSS
 - Radix UI Components
 - React Router DOM
-- Clerk Authentication
+- Own Authentication
 
 ### Backend
 - Node.js
