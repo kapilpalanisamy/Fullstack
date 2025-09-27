@@ -98,7 +98,7 @@ class PaymentService {
         status: 'confirmed',
         block_number: verification.slot,
         confirmation_count: 1,
-        gas_fee: verification.fee / 1000000000, // Convert lamports to SOL
+        gas_fee: verification.fee , // Convert lamports to SOL
         metadata: {
           ...payment.metadata,
           confirmed: true,
