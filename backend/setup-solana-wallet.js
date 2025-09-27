@@ -77,7 +77,7 @@ async function setupSolanaWallet() {
     console.log(`ADMIN_WALLET_ADDRESS=${adminPublicKey}`);
     console.log('SOLANA_NETWORK=devnet');
     console.log('SOLANA_RPC_URL=https://api.devnet.solana.com');
-    console.log('JOB_POSTING_FEE_SOL=0.01');
+    console.log('JOB_POSTING_FEE_SOL=0.00');
     
     return {
       publicKey: adminPublicKey,
