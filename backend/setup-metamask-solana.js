@@ -68,13 +68,13 @@ async function setupSolanaWithMetaMask() {
     console.log(`ADMIN_WALLET_ADDRESS=${sampleAddress}`);
     console.log('SOLANA_NETWORK=devnet');
     console.log('SOLANA_RPC_URL=https://api.devnet.solana.com');
-    console.log('JOB_POSTING_FEE_SOL=0.01');
+    console.log('JOB_POSTING_FEE_SOL=0.00');
     console.log('');
     console.log('# Or replace with your MetaMask Solana address:');
     console.log('ADMIN_WALLET_ADDRESS=your_metamask_solana_address_here');
     console.log('SOLANA_NETWORK=devnet');
     console.log('SOLANA_RPC_URL=https://api.devnet.solana.com');
-    console.log('JOB_POSTING_FEE_SOL=0.01');
+    console.log('JOB_POSTING_FEE_SOL=0.00');
     
     console.log('\n🎯 Next Steps:');
     console.log('1. Choose an admin wallet address (your MetaMask or generated)');
