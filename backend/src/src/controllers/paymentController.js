@@ -174,9 +174,9 @@ class PaymentController {
 
     // For Solana, transaction fees are very low and consistent
     const estimate = {
-      transactionFee: 0.000005, // ~5000 lamports
+      transactionFee: 0.00, // ~5000 lamports
       jobPostingFee: amount,
-      totalCost: amount + 0.000005,
+      totalCost: amount + 0.00,
       currency: 'SOL'
     };
 
