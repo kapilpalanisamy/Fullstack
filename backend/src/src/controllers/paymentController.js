@@ -170,7 +170,7 @@ class PaymentController {
    * POST /api/payments/estimate-fee
    */
   estimateFee = asyncHandler(async (req, res) => {
-    const { amount = 0.01 } = req.body; // Default job posting fee
+    const { amount = 0.00 } = req.body; // Default job posting fee
 
     // For Solana, transaction fees are very low and consistent
     const estimate = {
